@@ -1,67 +1,57 @@
-
 1. What dataset did you use? How many LIVE and SPOOF samples total?
+Answer:
+I used Option B for dataset preparation. Genuine fingerprint images were selected from the SOCOFing (Sokoto Coventry Fingerprint) dataset to form the LIVE class. To generate the SPOOF class, these fingerprint images were displayed on a screen or printed and then re-photographed using a smartphone camera, simulating presentation attacks such as screen replay or printed fingerprint attacks.
+The final dataset consisted of:
+LIVE (Genuine): 40 images
+SPOOF (Fake): 40 images
+Total samples: 80 images
+The dataset was organized into separate live/ and spoof/ directories and then split into 70% training, 15% validation, and 15% testing for model training and evaluation.
 
-I used a custom fingerprint liveness dataset collected for this project. The dataset contains two classes:
-
-Live fingerprints: 30 images
-Spoof fingerprints: 30 images
-
-The dataset was split into:
-
-Training: 70%
-Validation: 15%
-Testing: 15%
-
-The test set used for evaluation contained 12 images (6 live and 6 spoof).
 
 2. Which CNN backbone did you choose and why?
-
+Answer:
 I used MobileNetV3-Small as the CNN backbone with TensorFlow transfer learning.
-
 I chose MobileNetV3-Small because it:
-
 Is lightweight and computationally efficient.
 Uses pretrained ImageNet weights for better performance on a small dataset.
 Provides good accuracy while keeping inference fast, making it suitable for fingerprint liveness detection.
 
+
 3. What threshold did you set? What is APCER at BPCER = 3%?
+Answer:
+The model was initially evaluated using the default binary classification threshold of 0.50. After analyzing the ROC curve and minimizing the Average Classification Error Rate (ACER), the optimal decision threshold was found to be 0.49, which was used as the final threshold.
+Optimal Threshold: 0.49
+Minimum ACER: 0.3333 (33.33%)
+The evaluation produced:
+APCER: 0.5000 (50.00%)
+BPCER: 0.1667 (16.67%)
+Since the obtained BPCER is 16.67%, the model does not reach a BPCER of 3%. Therefore, APCER at BPCER = 3% cannot be reported from the current evaluation, as no operating threshold satisfies that constraint.
 
-The evaluation script automatically selected the threshold by minimizing the Average Classification Error Rate (ACER).
 
-Selected threshold: 0.49
+4. What is your EER?
+Answer:
+The model achieved an Equal Error Rate (EER) of 50.00% at a decision threshold of 0.4829. The EER is the point at which the false acceptance rate equals the false rejection rate and serves as a standard measure of biometric system accuracy. While the current EER is relatively high due to the small dataset and limited training samples, it provides a baseline for future improvements through additional data collection, data augmentation, and model tuning.
 
-My project does not compute APCER specifically at BPCER = 3%. It evaluates APCER and BPCER across different thresholds and selects the threshold with the minimum ACER.
-
-At the selected threshold:
-
-APCER = 50.0%
-BPCER = 16.7%
-ACER = 33.3%
 
 5. What attack types would fool your model? (printed photo vs. screen replay vs. 3D mold — which is hardest?)
+Answer:
+Among the three attack types, 3D mold attacks are expected to be the hardest for my model to detect. The model was trained using LIVE fingerprints and spoof images created from printed or screen-displayed fingerprints, so it has learned to distinguish these two-dimensional presentation attacks. However, it was not trained on 3D fingerprint molds made from materials such as silicone, latex, or gelatin.
+Printed photo attack: Easier to detect because printed images often contain paper texture, blur, and printing artifacts that differ from genuine fingerprints.
+Screen replay attack: Moderately difficult because screen glare, moiré patterns, and pixel structures can resemble real fingerprints under certain lighting conditions.
+3D mold attack: Most difficult because it reproduces the physical ridge and valley structure of a real fingerprint and can closely mimic the appearance of a live finger, especially without specialized liveness sensors.
 
-My dataset only contains live fingerprints and spoof fingerprints without distinguishing between different spoof attack types.
-
-Therefore, this project cannot experimentally determine which attack type is hardest.
-
-However, based on the current implementation, the model would likely be more vulnerable to high-quality 3D mold attacks, since they better replicate the texture and ridge structure of real fingerprints than printed images or screen replays.
 
 6. Why do we fix BPCER and not APCER when choosing the operating threshold?
+Answer:
+The operating threshold is selected by fixing BPCER because it limits the false rejection rate for genuine users, ensuring good usability. After setting an acceptable BPCER (e.g., 3%), the corresponding APCER is measured to determine how resistant the system is to presentation attacks. This approach balances user convenience with security and is the standard evaluation protocol for biometric presentation attack detection systems.
 
-BPCER measures how often genuine (live) fingerprints are incorrectly rejected.
-
-In practical biometric systems, rejecting legitimate users results in a poor user experience. Therefore, an acceptable BPCER is usually fixed first, and the operating threshold is chosen accordingly. The corresponding APCER indicates how well the system detects spoof attacks at that operating point.
-
-In this project, the threshold was selected using the minimum ACER rather than fixing BPCER to a specific value.
 
 7. If you had 3 months and a proper dataset, what would you do differently?
-
-With additional time and a larger dataset, I would:
-Collect a much larger and more diverse dataset containing multiple sensors, lighting conditions, and spoof materials.
-Use a stronger CNN backbone such as EfficientNet or ConvNeXt with transfer learning.
-Apply extensive data augmentation to improve generalization.
-Perform hyperparameter optimization using cross-validation.
-Tune the operating threshold using a validation set instead of selecting it manually.
-Evaluate separately on different attack types (printed, screen replay, silicone, gelatin, latex, etc.).
-Add explainability methods such as Grad-CAM to visualize the fingerprint regions influencing predictions.
-Compare multiple architectures and report ROC, DET, APCER, BPCER, ACER, and EER for a comprehensive evaluation
+Answer:
+With three months and access to a larger, well-annotated fingerprint liveness dataset, I would make several improvements to increase the model's accuracy and robustness:
+Use a larger and more diverse dataset: Train on thousands of live and spoof fingerprint images collected from different sensors, users, lighting conditions, and spoof materials (e.g., paper, screen replay, silicone, gelatin, latex, and 3D molds).
+Improve data augmentation and preprocessing: Apply stronger data augmentation techniques such as rotation, scaling, brightness and contrast variations, blur, and noise to improve the model's ability to generalize.
+Experiment with advanced deep learning models: Compare MobileNetV3 with more powerful architectures such as EfficientNet, ResNet50, and ConvNeXt, and fine-tune them using transfer learning.
+Optimize the decision threshold: Determine the operating threshold using ROC/DET analysis and report biometric metrics such as EER and APCER at fixed BPCER values (e.g., 1%, 3%, and 5%).
+Perform cross-validation and hyperparameter tuning: Use k-fold cross-validation along with systematic tuning of learning rate, batch size, optimizer, and regularization techniques to improve model performance and reduce overfitting.
+Evaluate on unseen attack types: Test the model against new presentation attacks that were not included during training to measure its robustness in real-world scenarios.

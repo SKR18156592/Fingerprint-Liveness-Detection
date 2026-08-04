@@ -308,6 +308,24 @@ roc_auc = auc(fpr, tpr)
 
 print(f"\nROC AUC : {roc_auc:.4f}")
 
+# ==========================================================
+# Equal Error Rate (EER)
+# ==========================================================
+
+# False Negative Rate (same as BPCER curve on ROC)
+fnr = 1 - tpr
+
+# Find operating point where FPR ~= FNR
+eer_index = np.nanargmin(np.abs(fpr - fnr))
+
+eer = (fpr[eer_index] + fnr[eer_index]) / 2
+eer_threshold = roc_thresholds[eer_index]
+
+print("\nEqual Error Rate")
+print("-" * 30)
+print(f"EER       : {eer:.4f}")
+print(f"Threshold : {eer_threshold:.4f}")
+
 plt.figure(figsize=(6, 6))
 
 plt.plot(
