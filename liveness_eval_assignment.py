@@ -41,7 +41,10 @@ from sklearn.metrics import (
 # Path to trained model
 MODEL_PATH = "models/liveness_model.keras"
 
-# Test dataset directory
+# Validation dataset
+VAL_DIR = "dataset_split/val"
+
+# Test dataset
 TEST_DIR = "dataset_split/test"
 
 # Output directory (used later for saving plots)
@@ -63,17 +66,31 @@ print("=" * 60)
 print("Loading test dataset...")
 print("=" * 60)
 
-test_ds = tf.keras.utils.image_dataset_from_directory(
-    TEST_DIR,
-    image_size=IMG_SIZE,
-    batch_size=BATCH_SIZE,
-    label_mode="binary",
-    shuffle=False      # IMPORTANT:
-                       # Keep order fixed so predictions and labels match.
-)
+def load_dataset(directory):
 
-print("\nClass Mapping:")
-print(test_ds.class_names)
+    ds = tf.keras.utils.image_dataset_from_directory(
+        directory,
+        image_size=IMG_SIZE,
+        batch_size=BATCH_SIZE,
+        label_mode="binary",
+        shuffle=False
+    )
+
+    ds = ds.map(
+        lambda images, labels: (
+            preprocess(images),
+            labels
+        ),
+        num_parallel_calls=tf.data.AUTOTUNE
+    )
+
+    return ds.prefetch(tf.data.AUTOTUNE)
+
+print("Loading validation dataset...")
+val_ds = load_dataset(VAL_DIR)
+
+print("Loading test dataset...")
+test_ds = load_dataset(TEST_DIR)
 
 
 # ==========================================================
