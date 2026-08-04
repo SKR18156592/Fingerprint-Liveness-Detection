@@ -1,0 +1,67 @@
+
+1. What dataset did you use? How many LIVE and SPOOF samples total?
+
+I used a custom fingerprint liveness dataset collected for this project. The dataset contains two classes:
+
+Live fingerprints: 30 images
+Spoof fingerprints: 30 images
+
+The dataset was split into:
+
+Training: 70%
+Validation: 15%
+Testing: 15%
+
+The test set used for evaluation contained 12 images (6 live and 6 spoof).
+
+2. Which CNN backbone did you choose and why?
+
+I used MobileNetV3-Small as the CNN backbone with TensorFlow transfer learning.
+
+I chose MobileNetV3-Small because it:
+
+Is lightweight and computationally efficient.
+Uses pretrained ImageNet weights for better performance on a small dataset.
+Provides good accuracy while keeping inference fast, making it suitable for fingerprint liveness detection.
+
+3. What threshold did you set? What is APCER at BPCER = 3%?
+
+The evaluation script automatically selected the threshold by minimizing the Average Classification Error Rate (ACER).
+
+Selected threshold: 0.49
+
+My project does not compute APCER specifically at BPCER = 3%. It evaluates APCER and BPCER across different thresholds and selects the threshold with the minimum ACER.
+
+At the selected threshold:
+
+APCER = 50.0%
+BPCER = 16.7%
+ACER = 33.3%
+
+5. What attack types would fool your model? (printed photo vs. screen replay vs. 3D mold — which is hardest?)
+
+My dataset only contains live fingerprints and spoof fingerprints without distinguishing between different spoof attack types.
+
+Therefore, this project cannot experimentally determine which attack type is hardest.
+
+However, based on the current implementation, the model would likely be more vulnerable to high-quality 3D mold attacks, since they better replicate the texture and ridge structure of real fingerprints than printed images or screen replays.
+
+6. Why do we fix BPCER and not APCER when choosing the operating threshold?
+
+BPCER measures how often genuine (live) fingerprints are incorrectly rejected.
+
+In practical biometric systems, rejecting legitimate users results in a poor user experience. Therefore, an acceptable BPCER is usually fixed first, and the operating threshold is chosen accordingly. The corresponding APCER indicates how well the system detects spoof attacks at that operating point.
+
+In this project, the threshold was selected using the minimum ACER rather than fixing BPCER to a specific value.
+
+7. If you had 3 months and a proper dataset, what would you do differently?
+
+With additional time and a larger dataset, I would:
+Collect a much larger and more diverse dataset containing multiple sensors, lighting conditions, and spoof materials.
+Use a stronger CNN backbone such as EfficientNet or ConvNeXt with transfer learning.
+Apply extensive data augmentation to improve generalization.
+Perform hyperparameter optimization using cross-validation.
+Tune the operating threshold using a validation set instead of selecting it manually.
+Evaluate separately on different attack types (printed, screen replay, silicone, gelatin, latex, etc.).
+Add explainability methods such as Grad-CAM to visualize the fingerprint regions influencing predictions.
+Compare multiple architectures and report ROC, DET, APCER, BPCER, ACER, and EER for a comprehensive evaluation
