@@ -1,0 +1,10 @@
+Metric,Value
+Accuracy,0.6666666666666666
+Precision,0.6
+Recall,1.0
+F1 Score,0.75
+APCER,0.0
+BPCER,1.0
+ACER,0.5
+ROC AUC,0.5
+Best Threshold,0.74
