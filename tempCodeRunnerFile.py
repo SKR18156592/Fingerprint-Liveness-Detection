@@ -1,0 +1,1 @@
+1__M_Left_index_finger.BMP

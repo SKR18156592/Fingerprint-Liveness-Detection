@@ -6,7 +6,13 @@ base_model = tf.keras.applications.MobileNetV3Small(
     weights="imagenet"
 )
 
-base_model.trainable = False
+# base_model.trainable = False
+
+# Unfreeze the last 20–30 layers
+base_model.trainable = True
+
+for layer in base_model.layers[:-20]:
+    layer.trainable = False
 
 inputs = tf.keras.Input(shape=(224,224,3))
 
@@ -24,7 +30,7 @@ outputs = tf.keras.layers.Dense(
 model = tf.keras.Model(inputs, outputs)
 
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
     loss="binary_crossentropy",
     metrics=[
         "accuracy",
