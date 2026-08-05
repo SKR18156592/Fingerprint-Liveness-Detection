@@ -1,14 +1,14 @@
-# Fingerprint Liveness Detection (Presentation Attack Detection)
+Fingerprint Liveness Detection (Presentation Attack Detection)
 
 Assignment 3: Fingerprint Liveness Detection (PAD Module)
 
 Name: Suman Raj
 
-## Objective
+(1) Objective
 
 The objective of this project was to develop a Presentation Attack Detection (PAD) module capable of classifying fingerprint images as Live or Spoof before biometric authentication. The system was implemented using transfer learning and evaluated using standard biometric performance metrics.
 
-## Methodology
+(2) Methodology
 
 The dataset was organized into two classes: Live and Spoof, containing 40 images each (80 images total). The data was split into 70% training, 15% validation, and 15% testing. All images were resized to 224 × 224 pixels.
 
@@ -18,7 +18,7 @@ The classification model was built using MobileNetV3-Small with ImageNet pre-tra
 
 After training, threshold calibration was performed on the validation set by sweeping thresholds from 0.00 to 1.00. The operating threshold was selected at the point closest to the target BPCER of 3%. The calibrated threshold was then used to evaluate the independent test set.
 
-## Results
+(3) Results
 
 Operating Threshold : 0.99
 
@@ -42,21 +42,21 @@ F1-Score : 50.00%
 
 The evaluation script also generated a confusion matrix, ROC curve, score distribution plot, APCER-BPCER tradeoff curve, and evaluation metrics file.
 
-## Discussion
+(4) Discussion
 
 The selected threshold was 0.99, resulting in BPCER = 0.00% and APCER = 58.33% on the validation dataset. Since the validation set contained only 12 Live and 12 Spoof images, it was not possible to obtain exactly 3% BPCER. Therefore, the closest achievable operating point was selected.
 
 The model achieved a test accuracy of 66.67% with an EER of 33.33%. While the model successfully classified genuine fingerprints, it showed lower performance in detecting spoof samples. This is primarily due to the limited size and diversity of the dataset.
 
-## Conclusion
+(5) Conclusion
 
 A fingerprint Presentation Attack Detection system was successfully implemented using MobileNetV3-Small and TensorFlow. The project demonstrates the complete PAD pipeline, including dataset preparation, transfer learning, threshold calibration, evaluation using biometric metrics (APCER, BPCER, ACER, and EER), and inference on unseen images. Future improvements include collecting a larger and more diverse dataset, incorporating additional spoof attack types, and evaluating more advanced deep learning architectures.
 
 ---
 
-# Report Questions
+Report Questions
 
-## 1. What dataset did you use? How many LIVE and SPOOF samples total?
+1. What dataset did you use? How many LIVE and SPOOF samples total?
 
 Answer:
 
@@ -74,7 +74,7 @@ The dataset was organized into separate live and spoof folders and split into 70
 
 ---
 
-## 2. Which CNN backbone did you choose and why?
+2. Which CNN backbone did you choose and why?
 
 Answer:
 
@@ -91,7 +91,7 @@ The original classification head was replaced with a binary sigmoid output layer
 
 ---
 
-## 3. What threshold did you set? What is APCER at BPCER = 3%?
+3. What threshold did you set? What is APCER at BPCER = 3%?
 
 Answer:
 
@@ -106,7 +106,7 @@ Since the validation set contained only 12 Live images, achieving exactly 3% BPC
 
 ---
 
-## 4. What is your EER?
+4. What is your EER?
 
 Answer:
 
@@ -116,7 +116,7 @@ This indicates moderate performance and suggests that the model's ability to dis
 
 ---
 
-## 5. What attack types would fool your model? (Printed photo vs. Screen replay vs. 3D mold — which is hardest?)
+5. What attack types would fool your model? (Printed photo vs. Screen replay vs. 3D mold — which is hardest?)
 
 Answer:
 
@@ -128,7 +128,7 @@ Among the three attack types, 3D mold attacks are expected to be the most diffic
 
 ---
 
-## 6. Why do we fix BPCER and not APCER when choosing the operating threshold?
+6. Why do we fix BPCER and not APCER when choosing the operating threshold?
 
 Answer:
 
@@ -138,7 +138,7 @@ After selecting an acceptable BPCER (for example, 3%), the corresponding APCER i
 
 ---
 
-## 7. If you had 3 months and a proper dataset, what would you do differently?
+7. If you had 3 months and a proper dataset, what would you do differently?
 
 Answer:
 
