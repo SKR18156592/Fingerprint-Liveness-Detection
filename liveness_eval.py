@@ -33,7 +33,7 @@ from sklearn.metrics import (
 # Configuration
 # ==========================================================
 
-MODEL_PATH = "models/liveness_model.keras"
+MODEL_PATH = "models/liveness_model_checkpoint.keras"
 
 VAL_DIR = "dataset_split/val"
 TEST_DIR = "dataset_split/test"

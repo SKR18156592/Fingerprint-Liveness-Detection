@@ -55,7 +55,7 @@ OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 checkpoint = tf.keras.callbacks.ModelCheckpoint(
-    filepath=MODEL_DIR / "liveness_model.keras",
+    filepath=MODEL_DIR / "liveness_model_checkpoint.keras",
     monitor="val_accuracy",
     mode="max",
     save_best_only=True,
@@ -86,7 +86,7 @@ csv_logger = tf.keras.callbacks.CSVLogger(
 # ==========================================================
 from  dataset import train_ds,val_ds
 
-EPOCHS = 20
+EPOCHS = 30
 
 history = model.fit(
     train_ds,
