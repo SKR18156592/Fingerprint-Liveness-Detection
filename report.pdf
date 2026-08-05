@@ -2,9 +2,9 @@
 Answer:
 I used Option B for dataset preparation. Genuine fingerprint images were selected from the SOCOFing (Sokoto Coventry Fingerprint) dataset to form the LIVE class. To generate the SPOOF class, these fingerprint images were displayed on a screen or printed and then re-photographed using a smartphone camera, simulating presentation attacks such as screen replay or printed fingerprint attacks.
 The final dataset consisted of:
-LIVE (Genuine): 40 images
-SPOOF (Fake): 40 images
-Total samples: 80 images
+LIVE (Genuine): 80 images
+SPOOF (Fake): 80 images
+Total samples: 1600 images
 The dataset was organized into separate live/ and spoof/ directories and then split into 70% training, 15% validation, and 15% testing for model training and evaluation.
 
 
@@ -22,13 +22,11 @@ The final classification layer was replaced with a binary sigmoid output to clas
 
 3. What threshold did you set? What is APCER at BPCER = 3%?
 Answer:
-The operating threshold was calibrated using the validation dataset by sweeping threshold values from 0.00 to 1.00 in increments of 0.01. The threshold closest to the target BPCER of 3% was selected.
-For this model, the selected operating threshold was 0.97. At this threshold, the BPCER was 0.00%, while the corresponding APCER was 83.33%.
-It was not possible to obtain exactly 3% BPCER because the validation set contained only 6 live and 6 spoof images. With such a small dataset, the possible BPCER values are discrete (0%, 16.67%, 33.33%, etc.), making 3% unattainable. Therefore, the closest achievable operating point was selected, resulting in BPCER = 0.00% and APCER = 83.33%. A larger validation dataset would allow finer threshold calibration and more reliable PAD performance estimates.
+The operating threshold was calibrated using the validation dataset by sweeping threshold values from 0.00 to 1.00. The selected threshold was 0.99, which resulted in a BPCER of 0.00% and an APCER of 91.67%. Since the validation dataset contained only 12 live images, achieving exactly 3% BPCER was not possible, so the closest operating point was selected.
 
 4. What is your EER?
 Answer:
-The Equal Error Rate (EER) of the model is 58.33%, obtained at a threshold of 0.9633. This relatively high EER indicates that the model has limited performance on the current dataset, mainly due to the small number of training and validation samples. A larger and more diverse dataset would help reduce the EER and improve liveness detection accuracy.
+The Equal Error Rate (EER) of the model is 37.50%, obtained at a threshold of 0.9579. This indicates moderate performance, and it can be improved by training with a larger and more diverse dataset.
 
 5. What attack types would fool your model? (printed photo vs. screen replay vs. 3D mold — which is hardest?)
 Answer:
