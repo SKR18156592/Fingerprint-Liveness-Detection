@@ -257,8 +257,8 @@ Example output:
 Prediction
 --------------------
 Label      : LIVE ✅
-Score      : 0.6414
-Confidence : 35.86%
+Score      : 0.3984
+Confidence : 60.16%
 ```
 
 ---

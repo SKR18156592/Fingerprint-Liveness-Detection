@@ -22,11 +22,11 @@ The final classification layer was replaced with a binary sigmoid output to clas
 
 3. What threshold did you set? What is APCER at BPCER = 3%?
 Answer:
-The operating threshold was calibrated using the validation dataset by sweeping threshold values from 0.00 to 1.00. The selected threshold was 0.99, which resulted in a BPCER of 0.00% and an APCER of 91.67%. Since the validation dataset contained only 12 live images, achieving exactly 3% BPCER was not possible, so the closest operating point was selected.
+The operating threshold was calibrated on the validation dataset by sweeping threshold values from 0.00 to 1.00. The selected threshold was 0.99, which resulted in a BPCER of 0.00% and an APCER of 58.33%. Since the validation set contained only 12 live images, achieving exactly 3% BPCER was not possible, so the closest operating point was selected.
 
 4. What is your EER?
 Answer:
-The Equal Error Rate (EER) of the model is 37.50%, obtained at a threshold of 0.9579. This indicates moderate performance, and it can be improved by training with a larger and more diverse dataset.
+The Equal Error Rate (EER) of the model is 33.33%, obtained at a threshold of 0.9869. This indicates moderate performance, and it can be improved by training with a larger and more diverse dataset.
 
 5. What attack types would fool your model? (printed photo vs. screen replay vs. 3D mold — which is hardest?)
 Answer:
