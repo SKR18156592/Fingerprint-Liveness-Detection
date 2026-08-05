@@ -1,1 +1,0 @@
-liveness_model_checkpoint
