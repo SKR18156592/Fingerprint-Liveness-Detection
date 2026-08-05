@@ -16,7 +16,9 @@ for layer in base_model.layers[:-20]:
 
 inputs = tf.keras.Input(shape=(224,224,3))
 
-x = base_model(inputs, training=False)
+# x = base_model(inputs, training=False)
+x = base_model(inputs)
+
 
 x = tf.keras.layers.GlobalAveragePooling2D()(x)
 
@@ -30,7 +32,7 @@ outputs = tf.keras.layers.Dense(
 model = tf.keras.Model(inputs, outputs)
 
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
     loss="binary_crossentropy",
     metrics=[
         "accuracy",

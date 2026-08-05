@@ -33,7 +33,7 @@ for cls in CLASSES:
 
     images = list(source_dir.glob("*"))
 
-    random.shuffle(images)
+    random.Random(42).shuffle(images)
 
     num_images = len(images)
 

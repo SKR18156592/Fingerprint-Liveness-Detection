@@ -67,7 +67,7 @@ image_rgb = cv2.cvtColor(
 
 
 # ==========================================================
-# Preprocess
+# Preprocess (same as training)
 # ==========================================================
 
 input_image = cv2.resize(
@@ -77,15 +77,19 @@ input_image = cv2.resize(
 
 input_image = input_image.astype(np.float32)
 
-input_image = tf.keras.applications.mobilenet_v3.preprocess_input(
-    input_image
-)
+# Normalize to [0,1]
+input_image = input_image / 255.0
+
+# Same ImageNet normalization used during training
+IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+
+input_image = (input_image - IMAGENET_MEAN) / IMAGENET_STD
 
 input_image = np.expand_dims(
     input_image,
     axis=0
 )
-
 
 # ==========================================================
 # Predict
@@ -100,7 +104,7 @@ prediction = int(score >= threshold)
 
 confidence = score if prediction == 1 else 1 - score
 
-label = "Spoof" if prediction == 1 else "Live"
+label = "SPOOF ❌" if prediction == 1 else "LIVE ✅"
 
 
 print("\nPrediction")
@@ -121,7 +125,8 @@ plt.imshow(image_rgb)
 plt.axis("off")
 
 plt.title(
-    f"{label}\nScore: {score:.3f}"
+    f"{label}\n"
+    f"Spoof Probability: {score:.3f}\n"
+    f"Confidence: {confidence:.2%}"
 )
-
 plt.show()

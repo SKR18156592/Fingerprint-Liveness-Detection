@@ -34,7 +34,7 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 
 data_augmentation = tf.keras.Sequential([
     tf.keras.layers.RandomRotation(0.083),
-    tf.keras.layers.RandomFlip("horizontal"),
+    # tf.keras.layers.RandomFlip("horizontal"),
     tf.keras.layers.RandomBrightness(0.15),
     tf.keras.layers.RandomContrast(0.15),
 ])
