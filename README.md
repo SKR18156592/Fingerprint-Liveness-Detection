@@ -280,37 +280,6 @@ The evaluation script reports:
 
 ---
 
-# Assignment Questions
-
-### Dataset Used
-
-Self-collected fingerprint dataset consisting of **Live** and **Spoof** fingerprint images. The dataset was organized into separate folders and split into **70% training**, **15% validation**, and **15% testing**.
-
-### CNN Backbone
-
-**MobileNetV3-Small** was selected because it is lightweight, computationally efficient, and well suited for mobile and embedded biometric applications while maintaining strong classification performance.
-
-### Threshold Selection
-
-The decision threshold was calibrated using the **validation dataset** by selecting the operating point where **BPCER ≈ 3%**. The corresponding **APCER** was then reported at this threshold.
-
-### Equal Error Rate
-
-The Equal Error Rate (EER) was computed using the ROC curve as the point where **False Positive Rate** and **False Negative Rate** are approximately equal.
-
-### Possible Attack Limitations
-
-The model is expected to perform well against:
-
-* Printed fingerprint attacks
-* Screen replay attacks
-
-More sophisticated attacks, such as **3D silicone or latex fingerprint molds**, are likely to be more challenging because they preserve realistic ridge structures and depth information.
-
-### Why Fix BPCER?
-
-BPCER represents inconvenience to genuine users. By fixing **BPCER = 3%**, the system limits the rejection rate of legitimate users while measuring the resulting security level through APCER.
-
 ### Future Improvements
 
 Given more time and a larger dataset, future work could include:
