@@ -11,27 +11,24 @@ The dataset was organized into separate live/ and spoof/ directories and then sp
 2. Which CNN backbone did you choose and why?
 Answer:
 I used MobileNetV3-Small as the CNN backbone with TensorFlow transfer learning.
-I chose MobileNetV3-Small because it:
-Is lightweight and computationally efficient.
-Uses pretrained ImageNet weights for better performance on a small dataset.
-Provides good accuracy while keeping inference fast, making it suitable for fingerprint liveness detection.
+Reasons for choosing MobileNetV3-Small:
+ - Lightweight architecture suitable for mobile and embedded devices.
+ - Pre-trained on ImageNet, enabling effective transfer learning.
+ - Faster inference compared to larger CNNs.
+ - Good balance between computational efficiency and classification accuracy.
+
+The final classification layer was replaced with a binary sigmoid output to classify fingerprint images as Live or Spoof.
 
 
 3. What threshold did you set? What is APCER at BPCER = 3%?
 Answer:
-The model was initially evaluated using the default binary classification threshold of 0.50. After analyzing the ROC curve and minimizing the Average Classification Error Rate (ACER), the optimal decision threshold was found to be 0.49, which was used as the final threshold.
-Optimal Threshold: 0.49
-Minimum ACER: 0.3333 (33.33%)
-The evaluation produced:
-APCER: 0.5000 (50.00%)
-BPCER: 0.1667 (16.67%)
-Since the obtained BPCER is 16.67%, the model does not reach a BPCER of 3%. Therefore, APCER at BPCER = 3% cannot be reported from the current evaluation, as no operating threshold satisfies that constraint.
-
+The operating threshold was calibrated using the validation dataset by sweeping threshold values from 0.00 to 1.00 in increments of 0.01. The threshold closest to the target BPCER of 3% was selected.
+For this model, the selected operating threshold was 0.97. At this threshold, the BPCER was 0.00%, while the corresponding APCER was 83.33%.
+It was not possible to obtain exactly 3% BPCER because the validation set contained only 6 live and 6 spoof images. With such a small dataset, the possible BPCER values are discrete (0%, 16.67%, 33.33%, etc.), making 3% unattainable. Therefore, the closest achievable operating point was selected, resulting in BPCER = 0.00% and APCER = 83.33%. A larger validation dataset would allow finer threshold calibration and more reliable PAD performance estimates.
 
 4. What is your EER?
 Answer:
-The model achieved an Equal Error Rate (EER) of 50.00% at a decision threshold of 0.4829. The EER is the point at which the false acceptance rate equals the false rejection rate and serves as a standard measure of biometric system accuracy. While the current EER is relatively high due to the small dataset and limited training samples, it provides a baseline for future improvements through additional data collection, data augmentation, and model tuning.
-
+The Equal Error Rate (EER) of the model is 58.33%, obtained at a threshold of 0.9633. This relatively high EER indicates that the model has limited performance on the current dataset, mainly due to the small number of training and validation samples. A larger and more diverse dataset would help reduce the EER and improve liveness detection accuracy.
 
 5. What attack types would fool your model? (printed photo vs. screen replay vs. 3D mold — which is hardest?)
 Answer:
