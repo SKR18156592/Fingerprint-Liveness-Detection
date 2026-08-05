@@ -120,7 +120,7 @@ All images are resized to **224 × 224** pixels before training.
 | Parameter     | Value               |
 | ------------- | ------------------- |
 | Optimizer     | Adam                |
-| Epochs        | 20                  |
+| Epochs        | 30                  |
 | Image Size    | 224 × 224           |
 | Batch Size    | 8                   |
 | Loss Function | Binary Crossentropy |
@@ -257,8 +257,8 @@ Example output:
 Prediction
 --------------------
 Label      : LIVE ✅
-Score      : 0.3984
-Confidence : 60.16%
+Score      : 0.0028
+Confidence : 99.72%
 ```
 
 ---

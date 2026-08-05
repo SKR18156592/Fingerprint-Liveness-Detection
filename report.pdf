@@ -74,6 +74,7 @@ Since the validation set contained only 12 Live images, achieving exactly 3% BPC
 Answer:
 The Equal Error Rate (EER) of the model is 45.83%, obtained at a threshold of 0.9264.
 This indicates moderate performance and suggests that the model's ability to distinguish between Live and Spoof fingerprints can be improved by using a larger and more diverse dataset.
+
 ---
 
 5. What attack types would fool your model? (Printed photo vs. Screen replay vs. 3D mold — which is hardest?)
@@ -89,6 +90,7 @@ Among the three attack types, 3D mold attacks are expected to be the most diffic
 Answer:
 The operating threshold is selected by fixing BPCER because it limits the false rejection rate for genuine users, ensuring a good user experience.
 After selecting an acceptable BPCER (for example, 3%), the corresponding APCER is measured to evaluate how effectively the system prevents spoof attacks. This approach provides a balance between usability and security and follows the standard evaluation methodology used in biometric presentation attack detection systems.
+
 ---
 
 7. If you had 3 months and a proper dataset, what would you do differently?
