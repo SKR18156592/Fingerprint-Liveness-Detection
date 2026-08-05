@@ -2,18 +2,13 @@
 Fingerprint Liveness Detection
 Evaluation Script
 
-This script:
-1. Loads the trained TensorFlow model.
-2. Loads the test dataset.
-3. Preprocesses images using MobileNetV3 preprocessing.
-4. Predicts liveness scores.
-5. Converts probabilities into class labels.
-6. Computes evaluation metrics.
-7. Displays the confusion matrix.
+This script performs:
 
-Class Labels:
-0 -> Live Fingerprint
-1 -> Spoof Fingerprint
+1. Threshold calibration using VALIDATION set
+2. Finds threshold at BPCER = 3%
+3. Computes Equal Error Rate (EER)
+4. Evaluates TEST set using calibrated threshold
+5. Saves all plots and metrics
 """
 
 import numpy as np
@@ -31,69 +26,72 @@ from sklearn.metrics import (
     confusion_matrix,
     classification_report,
     roc_curve,
-    auc,
+    auc
 )
 
 # ==========================================================
 # Configuration
 # ==========================================================
 
-# Path to trained model
 MODEL_PATH = "models/liveness_model.keras"
 
-# Test dataset directory
+VAL_DIR = "dataset_split/val"
 TEST_DIR = "dataset_split/test"
 
-# Output directory (used later for saving plots)
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Image size used during training
 IMG_SIZE = (224, 224)
-
-# Batch size
 BATCH_SIZE = 32
 
+# ==========================================================
+# MobileNetV3 Preprocessing
+# ==========================================================
+
+preprocess = tf.keras.applications.mobilenet_v3.preprocess_input
+
+# ==========================================================
+# Load Validation Dataset
+# ==========================================================
+
+print("=" * 60)
+print("Loading Validation Dataset...")
+print("=" * 60)
+
+val_ds = tf.keras.utils.image_dataset_from_directory(
+    VAL_DIR,
+    image_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    label_mode="binary",
+    shuffle=False
+)
+
+val_ds = val_ds.map(
+    lambda images, labels: (preprocess(images), labels),
+    num_parallel_calls=tf.data.AUTOTUNE
+).prefetch(tf.data.AUTOTUNE)
 
 # ==========================================================
 # Load Test Dataset
 # ==========================================================
 
-print("=" * 60)
-print("Loading test dataset...")
-print("=" * 60)
+print("\nLoading Test Dataset...")
 
 test_ds = tf.keras.utils.image_dataset_from_directory(
     TEST_DIR,
     image_size=IMG_SIZE,
     batch_size=BATCH_SIZE,
     label_mode="binary",
-    shuffle=False      # IMPORTANT:
-                       # Keep order fixed so predictions and labels match.
+    shuffle=False
 )
-
-print("\nClass Mapping:")
-print(test_ds.class_names)
-
-
-# ==========================================================
-# Apply Same Preprocessing Used During Training
-# ==========================================================
-
-# MobileNetV3 expects images to be preprocessed
-preprocess = tf.keras.applications.mobilenet_v3.preprocess_input
 
 test_ds = test_ds.map(
     lambda images, labels: (preprocess(images), labels),
     num_parallel_calls=tf.data.AUTOTUNE
-)
-
-# Prefetch batches for faster inference
-test_ds = test_ds.prefetch(tf.data.AUTOTUNE)
-
+).prefetch(tf.data.AUTOTUNE)
 
 # ==========================================================
-# Load Trained Model
+# Load Model
 # ==========================================================
 
 print("\nLoading trained model...")
@@ -102,126 +100,180 @@ model = tf.keras.models.load_model(MODEL_PATH)
 
 print("Model loaded successfully.")
 
-
 # ==========================================================
-# Predict Liveness Scores
-# ==========================================================
-
-print("\nGenerating predictions...")
-
-# Predict probability for every image
-scores = model.predict(test_ds)
-
-# Convert shape from (N,1) to (N,)
-scores = scores.flatten()
-
-print(f"Total predictions: {len(scores)}")
-
-
-# ==========================================================
-# Collect Ground Truth Labels
+# Predict Validation Scores
 # ==========================================================
 
-true_labels = []
+print("\nPredicting Validation Scores...")
 
-# Iterate through dataset and collect labels
-for _, labels in test_ds:
-    true_labels.extend(labels.numpy())
+val_scores = model.predict(val_ds).flatten()
 
-# Convert list into NumPy array
-true_labels = np.array(true_labels).astype(int).flatten()
+val_labels = []
 
-print(f"Total labels: {len(true_labels)}")
+for _, labels in val_ds:
+    val_labels.extend(labels.numpy())
 
+val_labels = np.array(val_labels).astype(int).flatten()
 
-# ==========================================================
-# Convert Probabilities into Class Predictions
-# ==========================================================
-
-# Initial decision threshold
-threshold = 0.5
-
-# Probability >= threshold -> Spoof (1)
-# Probability < threshold  -> Live (0)
-predictions = (scores >= threshold).astype(int)
-
+print(f"Validation Images : {len(val_scores)}")
 
 # ==========================================================
-# Compute Evaluation Metrics
+# Threshold Calibration on Validation Set
 # ==========================================================
 
-accuracy = accuracy_score(
-    true_labels,
-    predictions
+print("\n" + "=" * 60)
+print("Threshold Calibration")
+print("=" * 60)
+
+threshold_values = np.arange(0.00, 1.01, 0.01)
+
+apcer_values = []
+bpcer_values = []
+acer_values = []
+
+for threshold in threshold_values:
+
+    # Probability >= threshold -> Spoof (1)
+    predictions = (val_scores >= threshold).astype(int)
+
+    cm = confusion_matrix(val_labels, predictions)
+
+    # Handle edge cases
+    if cm.shape != (2, 2):
+        apcer = 0.0
+        bpcer = 0.0
+        acer = 0.0
+    else:
+        tn, fp, fn, tp = cm.ravel()
+
+        # APCER = Spoof classified as Live
+        apcer = fn / (tp + fn) if (tp + fn) > 0 else 0
+
+        # BPCER = Live classified as Spoof
+        bpcer = fp / (tn + fp) if (tn + fp) > 0 else 0
+
+        acer = (apcer + bpcer) / 2
+
+    apcer_values.append(apcer)
+    bpcer_values.append(bpcer)
+    acer_values.append(acer)
+
+# ==========================================================
+# Find Threshold at BPCER = 3%
+# ==========================================================
+
+TARGET_BPCER = 0.03
+
+best_index = np.argmin(
+    np.abs(np.array(bpcer_values) - TARGET_BPCER)
 )
 
+best_threshold = threshold_values[best_index]
+
+best_bpcer = bpcer_values[best_index]
+best_apcer = apcer_values[best_index]
+best_acer = acer_values[best_index]
+
+print("\nOperating Threshold")
+print("-" * 40)
+print(f"Target BPCER : {TARGET_BPCER:.2%}")
+print(f"Threshold    : {best_threshold:.2f}")
+print(f"BPCER        : {best_bpcer:.4f}")
+print(f"APCER        : {best_apcer:.4f}")
+print(f"ACER         : {best_acer:.4f}")
+
+# ==========================================================
+# Equal Error Rate (EER)
+# ==========================================================
+
+fpr, tpr, roc_thresholds = roc_curve(val_labels, val_scores)
+
+fnr = 1 - tpr
+
+eer_index = np.nanargmin(np.abs(fpr - fnr))
+
+eer = (fpr[eer_index] + fnr[eer_index]) / 2
+
+eer_threshold = roc_thresholds[eer_index]
+
+roc_auc = auc(fpr, tpr)
+
+print("\nEqual Error Rate")
+print("-" * 40)
+print(f"EER          : {eer:.4f}")
+print(f"EER Threshold: {eer_threshold:.4f}")
+print(f"ROC AUC      : {roc_auc:.4f}")
+
+
+# ==========================================================
+# Evaluate Test Set using Calibrated Threshold
+# ==========================================================
+
+print("\n" + "=" * 60)
+print("Evaluating Test Dataset")
+print("=" * 60)
+
+# Predict probabilities on test dataset
+test_scores = model.predict(test_ds).flatten()
+
+# Collect true labels
+test_labels = []
+
+for _, labels in test_ds:
+    test_labels.extend(labels.numpy())
+
+test_labels = np.array(test_labels).astype(int).flatten()
+
+# Apply calibrated threshold
+test_predictions = (test_scores >= best_threshold).astype(int)
+
+# ==========================================================
+# Evaluation Metrics
+# ==========================================================
+
+accuracy = accuracy_score(test_labels, test_predictions)
+
 precision = precision_score(
-    true_labels,
-    predictions
+    test_labels,
+    test_predictions,
+    zero_division=0
 )
 
 recall = recall_score(
-    true_labels,
-    predictions
+    test_labels,
+    test_predictions,
+    zero_division=0
 )
 
 f1 = f1_score(
-    true_labels,
-    predictions
+    test_labels,
+    test_predictions,
+    zero_division=0
 )
 
-print("\nEvaluation Metrics")
-print("-" * 30)
+print("\nClassification Metrics")
+print("-" * 40)
 
-print(f"Accuracy : {accuracy:.4f}")
-print(f"Precision: {precision:.4f}")
-print(f"Recall   : {recall:.4f}")
-print(f"F1 Score : {f1:.4f}")
-
-
-# ==========================================================
-# Classification Report
-# ==========================================================
-
-print("\nClassification Report")
-print("-" * 30)
-
-print(
-    classification_report(
-        true_labels,
-        predictions,
-        target_names=["Live", "Spoof"]
-    )
-)
-
+print(f"Accuracy  : {accuracy:.4f}")
+print(f"Precision : {precision:.4f}")
+print(f"Recall    : {recall:.4f}")
+print(f"F1 Score  : {f1:.4f}")
 
 # ==========================================================
 # Confusion Matrix
 # ==========================================================
 
-cm = confusion_matrix(
-    true_labels,
-    predictions
-)
+cm = confusion_matrix(test_labels, test_predictions)
 
 print("\nConfusion Matrix")
-print("-" * 30)
+print("-" * 40)
 
 print(cm)
-
-# Matrix Layout
-#
-#                Predicted
-#               Live   Spoof
-#
-# Actual Live    TN      FP
-#
-# Actual Spoof   FN      TP
 
 tn, fp, fn, tp = cm.ravel()
 
 print("\nDetailed Counts")
-print("-" * 30)
+print("-" * 40)
 
 print(f"True Negatives : {tn}")
 print(f"False Positives: {fp}")
@@ -229,36 +281,43 @@ print(f"False Negatives: {fn}")
 print(f"True Positives : {tp}")
 
 # ==========================================================
-# APCER / BPCER / ACER
+# APCER / BPCER / ACER (Test Set)
 # ==========================================================
 
-
-
-# Attack Presentation Classification Error Rate
-# (Spoof classified as Live)
+# APCER = Spoof incorrectly classified as Live
 apcer = fn / (tp + fn) if (tp + fn) > 0 else 0
 
-# Bona Fide Presentation Classification Error Rate
-# (Live classified as Spoof)
+# BPCER = Live incorrectly classified as Spoof
 bpcer = fp / (tn + fp) if (tn + fp) > 0 else 0
 
-# Average Classification Error Rate
 acer = (apcer + bpcer) / 2
 
-print("\nBiometric Metrics")
-print("-" * 30)
+print("\nPAD Metrics")
+print("-" * 40)
+
 print(f"APCER : {apcer:.4f}")
 print(f"BPCER : {bpcer:.4f}")
 print(f"ACER  : {acer:.4f}")
 
+print("\nClassification Report")
+print("-" * 40)
+
+print(
+    classification_report(
+        test_labels,
+        test_predictions,
+        target_names=["Live", "Spoof"],
+        zero_division=0
+    )
+)
 
 # ==========================================================
 # Save Confusion Matrix Figure
 # ==========================================================
 
-plt.figure(figsize=(5, 5))
+plt.figure(figsize=(6,6))
 
-plt.imshow(cm, interpolation="nearest", cmap="Blues")
+plt.imshow(cm, cmap="Blues")
 
 plt.title("Confusion Matrix")
 
@@ -282,8 +341,8 @@ for i in range(cm.shape[0]):
             fontsize=12
         )
 
-plt.xlabel("Predicted Label")
-plt.ylabel("True Label")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
 
 plt.tight_layout()
 
@@ -294,81 +353,22 @@ plt.savefig(
 
 plt.close()
 
-
-# ==========================================================
-# ROC Curve
-# ==========================================================
-
-fpr, tpr, roc_thresholds = roc_curve(
-    true_labels,
-    scores
-)
-
-roc_auc = auc(fpr, tpr)
-
-print(f"\nROC AUC : {roc_auc:.4f}")
-
-# ==========================================================
-# Equal Error Rate (EER)
-# ==========================================================
-
-# False Negative Rate (same as BPCER curve on ROC)
-fnr = 1 - tpr
-
-# Find operating point where FPR ~= FNR
-eer_index = np.nanargmin(np.abs(fpr - fnr))
-
-eer = (fpr[eer_index] + fnr[eer_index]) / 2
-eer_threshold = roc_thresholds[eer_index]
-
-print("\nEqual Error Rate")
-print("-" * 30)
-print(f"EER       : {eer:.4f}")
-print(f"Threshold : {eer_threshold:.4f}")
-
-plt.figure(figsize=(6, 6))
-
-plt.plot(
-    fpr,
-    tpr,
-    linewidth=2,
-    label=f"AUC = {roc_auc:.3f}"
-)
-
-plt.plot(
-    [0, 1],
-    [0, 1],
-    linestyle="--"
-)
-
-plt.xlabel("False Positive Rate")
-plt.ylabel("True Positive Rate")
-plt.title("ROC Curve")
-plt.legend()
-
-plt.tight_layout()
-
-plt.savefig(
-    OUTPUT_DIR / "roc_curve.png",
-    dpi=300
-)
-
-plt.close()
-
+print("\nConfusion matrix saved.")
 
 # ==========================================================
 # Score Distribution
 # ==========================================================
 
-live_scores = scores[true_labels == 0]
-spoof_scores = scores[true_labels == 1]
+live_scores = test_scores[test_labels == 0]
+spoof_scores = test_scores[test_labels == 1]
 
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(8,5))
 
 plt.hist(
     live_scores,
     bins=20,
     alpha=0.6,
+    color="green",
     label="Live"
 )
 
@@ -376,20 +376,22 @@ plt.hist(
     spoof_scores,
     bins=20,
     alpha=0.6,
+    color="red",
     label="Spoof"
 )
 
 plt.axvline(
-    threshold,
-    color="red",
+    best_threshold,
+    color="black",
     linestyle="--",
     linewidth=2,
-    label=f"Threshold = {threshold}"
+    label=f"Threshold = {best_threshold:.2f}"
 )
 
 plt.xlabel("Spoof Probability")
 plt.ylabel("Number of Images")
 plt.title("Score Distribution")
+
 plt.legend()
 
 plt.tight_layout()
@@ -401,118 +403,111 @@ plt.savefig(
 
 plt.close()
 
+print("✓ Score distribution saved.")
 
 # ==========================================================
-# Threshold Sweep
+# APCER vs BPCER Tradeoff Curve
 # ==========================================================
 
-threshold_values = np.linspace(0, 1, 101)
-
-apcer_values = []
-bpcer_values = []
-acer_values = []
-
-for t in threshold_values:
-
-    pred = (scores >= t).astype(int)
-
-    cm_temp = confusion_matrix(
-        true_labels,
-        pred
-    )
-
-    tn, fp, fn, tp = cm_temp.ravel()
-
-    apcer_temp = fn / (tp + fn) if (tp + fn) > 0 else 0
-
-    bpcer_temp = fp / (tn + fp) if (tn + fp) > 0 else 0
-
-    acer_temp = (apcer_temp + bpcer_temp) / 2
-
-    apcer_values.append(apcer_temp)
-    bpcer_values.append(bpcer_temp)
-    acer_values.append(acer_temp)
-
-
-# ==========================================================
-# APCER / BPCER Curve
-# ==========================================================
-
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(6,6))
 
 plt.plot(
-    threshold_values,
+    bpcer_values,
     apcer_values,
     linewidth=2,
-    label="APCER"
+    label="Tradeoff Curve"
 )
 
-plt.plot(
-    threshold_values,
-    bpcer_values,
-    linewidth=2,
-    label="BPCER"
+plt.scatter(
+    best_bpcer,
+    best_apcer,
+    color="red",
+    s=80,
+    label=f"BPCER=3% Threshold ({best_threshold:.2f})"
 )
 
-plt.xlabel("Threshold")
-plt.ylabel("Error Rate")
-plt.title("APCER vs BPCER")
+plt.xlabel("BPCER")
+plt.ylabel("APCER")
+plt.title("APCER-BPCER Tradeoff Curve")
+
 plt.grid(True)
 plt.legend()
 
 plt.tight_layout()
 
 plt.savefig(
-    OUTPUT_DIR / "apcer_bpcer_curve.png",
+    OUTPUT_DIR / "apcer_bpcer_tradeoff.png",
     dpi=300
 )
 
 plt.close()
 
+print("✓ APCER-BPCER tradeoff curve saved.")
 
 # ==========================================================
-# Best Threshold
+# ROC Curve
 # ==========================================================
 
-best_index = np.argmin(acer_values)
+plt.figure(figsize=(6,6))
 
-best_threshold = threshold_values[best_index]
+plt.plot(
+    fpr,
+    tpr,
+    linewidth=2,
+    label=f"AUC = {roc_auc:.3f}"
+)
 
-print("\nRe-evaluating using best threshold...")
+plt.plot(
+    [0,1],
+    [0,1],
+    linestyle="--",
+    color="gray"
+)
 
-predictions = (scores >= best_threshold).astype(int)
+plt.scatter(
+    fpr[eer_index],
+    tpr[eer_index],
+    color="red",
+    s=80,
+    label=f"EER = {eer:.3f}"
+)
 
-cm = confusion_matrix(true_labels, predictions)
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
 
-accuracy = accuracy_score(true_labels, predictions)
-precision = precision_score(true_labels, predictions)
-recall = recall_score(true_labels, predictions)
-f1 = f1_score(true_labels, predictions)
+plt.title("ROC Curve")
 
+plt.legend()
 
-best_acer = acer_values[best_index]
+plt.tight_layout()
 
-print("\nOptimal Threshold")
-print("-" * 30)
-print(f"Threshold : {best_threshold:.2f}")
-print(f"Minimum ACER : {best_acer:.4f}")
+plt.savefig(
+    OUTPUT_DIR / "roc_curve.png",
+    dpi=300
+)
 
+plt.close()
 
-# Save threshold for inference
+print("✓ ROC curve saved.")
+
+# ==========================================================
+# Save Best Threshold
+# ==========================================================
+
 threshold_file = OUTPUT_DIR / "best_threshold.txt"
 
 with open(threshold_file, "w") as f:
     f.write(f"{best_threshold:.6f}")
 
-print(f"Best threshold saved to: {threshold_file}")
-
+print("✓ Best threshold saved.")
 
 # ==========================================================
 # Save Evaluation Metrics
 # ==========================================================
 
 results = pd.DataFrame({
-    "Metric": [
+
+    "Metric":[
         "Accuracy",
         "Precision",
         "Recall",
@@ -521,9 +516,11 @@ results = pd.DataFrame({
         "BPCER",
         "ACER",
         "ROC AUC",
-        "Best Threshold"
+        "EER",
+        "Threshold (BPCER≈3%)"
     ],
-    "Value": [
+
+    "Value":[
         accuracy,
         precision,
         recall,
@@ -532,6 +529,7 @@ results = pd.DataFrame({
         bpcer,
         acer,
         roc_auc,
+        eer,
         best_threshold
     ]
 })
@@ -541,7 +539,32 @@ results.to_csv(
     index=False
 )
 
-print("\nEvaluation metrics saved to:")
-print(OUTPUT_DIR / "evaluation_metrics.csv")
+print("✓ Evaluation metrics saved.")
 
-print("\nEvaluation completed successfully.")
+# ==========================================================
+# Final Summary
+# ==========================================================
+
+print("\n" + "="*60)
+print("FINAL RESULTS")
+print("="*60)
+
+print(f"Threshold (BPCER≈3%) : {best_threshold:.2f}")
+print(f"APCER               : {best_apcer:.4f}")
+print(f"BPCER               : {best_bpcer:.4f}")
+print(f"ACER                : {best_acer:.4f}")
+print(f"EER                 : {eer:.4f}")
+print(f"ROC AUC             : {roc_auc:.4f}")
+
+print("\nTest Set Performance")
+print("-"*40)
+
+print(f"Accuracy  : {accuracy:.4f}")
+print(f"Precision : {precision:.4f}")
+print(f"Recall    : {recall:.4f}")
+print(f"F1 Score  : {f1:.4f}")
+
+print("\nAll outputs saved in:")
+print(OUTPUT_DIR)
+
+print("\nEvaluation Completed Successfully!")
