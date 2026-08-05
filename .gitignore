@@ -5,13 +5,13 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# ignore images and bmp
-/data/**/*.bmp
+# ignore images and BMP
+/data/**/*.BMP
 /data/**/*.jpg
 /data/**/*.jpeg
 /data/**/*.png
 
-/dataset_split/**/*.bmp
+/dataset_split/**/*.BMP
 /dataset_split/**/*.jpg
 /dataset_split/**/*.jpeg
 /dataset_split/**/*.png
