@@ -4,3 +4,14 @@ venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# ignore images and bmp
+/data/**/*.bmp
+/data/**/*.jpg
+/data/**/*.jpeg
+/data/**/*.png
+
+/dataset_split/**/*.bmp
+/dataset_split/**/*.jpg
+/dataset_split/**/*.jpeg
+/dataset_split/**/*.png
