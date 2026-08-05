@@ -5,123 +5,80 @@ Assignment 3: Fingerprint Liveness Detection (PAD Module)
 Name: Suman Raj
 
 (1) Objective
-
 The objective of this project was to develop a Presentation Attack Detection (PAD) module capable of classifying fingerprint images as Live or Spoof before biometric authentication. The system was implemented using transfer learning and evaluated using standard biometric performance metrics.
 
 (2) Methodology
-
 The dataset was organized into two classes: Live and Spoof, containing 40 images each (80 images total). The data was split into 70% training, 15% validation, and 15% testing. All images were resized to 224 × 224 pixels.
-
 To improve generalization, data augmentation techniques including random rotation, horizontal flipping, brightness adjustment, and contrast adjustment were applied during training.
-
 The classification model was built using MobileNetV3-Small with ImageNet pre-trained weights. The original classification head was replaced with a binary sigmoid output layer for Live/Spoof classification. The model was trained using the Adam optimizer and binary cross-entropy loss.
-
 After training, threshold calibration was performed on the validation set by sweeping thresholds from 0.00 to 1.00. The operating threshold was selected at the point closest to the target BPCER of 3%. The calibrated threshold was then used to evaluate the independent test set.
 
 (3) Results
-
 Operating Threshold : 0.99
-
 APCER : 58.33%
-
 BPCER : 0.00%
-
 ACER : 29.17%
-
 Equal Error Rate (EER) : 33.33%
-
 ROC-AUC : 68.75%
-
 Test Accuracy : 66.67%
-
 Precision : 100.00%
-
 Recall : 33.33%
-
 F1-Score : 50.00%
 
 The evaluation script also generated a confusion matrix, ROC curve, score distribution plot, APCER-BPCER tradeoff curve, and evaluation metrics file.
 
 (4) Discussion
-
 The selected threshold was 0.99, resulting in BPCER = 0.00% and APCER = 58.33% on the validation dataset. Since the validation set contained only 12 Live and 12 Spoof images, it was not possible to obtain exactly 3% BPCER. Therefore, the closest achievable operating point was selected.
-
 The model achieved a test accuracy of 66.67% with an EER of 33.33%. While the model successfully classified genuine fingerprints, it showed lower performance in detecting spoof samples. This is primarily due to the limited size and diversity of the dataset.
 
 (5) Conclusion
-
 A fingerprint Presentation Attack Detection system was successfully implemented using MobileNetV3-Small and TensorFlow. The project demonstrates the complete PAD pipeline, including dataset preparation, transfer learning, threshold calibration, evaluation using biometric metrics (APCER, BPCER, ACER, and EER), and inference on unseen images. Future improvements include collecting a larger and more diverse dataset, incorporating additional spoof attack types, and evaluating more advanced deep learning architectures.
 
 ---
 
 Report Questions
-
 1. What dataset did you use? How many LIVE and SPOOF samples total?
-
 Answer:
-
 I used Option B for dataset preparation. Genuine fingerprint images were selected from the SOCOFing (Sokoto Coventry Fingerprint) dataset to form the LIVE class. The SPOOF class was created by displaying these fingerprint images on a screen or printing them and then re-photographing them using a smartphone camera. This simulated common presentation attacks such as screen replay and printed fingerprint attacks.
-
 The final dataset consisted of:
-
 LIVE (Genuine): 80 images
-
 SPOOF (Fake): 80 images
-
 Total Samples: 160 images
-
 The dataset was organized into separate live and spoof folders and split into 70% training, 15% validation, and 15% testing.
 
 ---
 
 2. Which CNN backbone did you choose and why?
-
 Answer:
-
 I used MobileNetV3-Small as the CNN backbone with TensorFlow transfer learning.
-
 The reasons for selecting MobileNetV3-Small are:
-
 * Lightweight architecture suitable for mobile and embedded devices.
 * Pre-trained on ImageNet, enabling effective transfer learning.
 * Faster inference compared to larger CNN models.
 * Good balance between computational efficiency and classification accuracy.
-
 The original classification head was replaced with a binary sigmoid output layer to classify fingerprint images as Live or Spoof.
 
 ---
-
 3. What threshold did you set? What is APCER at BPCER = 3%?
-
 Answer:
-
 The operating threshold was calibrated on the validation dataset by sweeping threshold values from 0.00 to 1.00.
-
 The selected operating threshold was 0.99, which resulted in:
-
 * BPCER: 0.00%
 * APCER: 58.33%
-
 Since the validation set contained only 12 Live images, achieving exactly 3% BPCER was not possible. Therefore, the closest achievable operating point was selected.
 
 ---
 
 4. What is your EER?
-
 Answer:
-
 The Equal Error Rate (EER) of the model is 33.33%, obtained at a threshold of 0.9869.
-
 This indicates moderate performance and suggests that the model's ability to distinguish between Live and Spoof fingerprints can be improved by using a larger and more diverse dataset.
 
 ---
 
 5. What attack types would fool your model? (Printed photo vs. Screen replay vs. 3D mold — which is hardest?)
-
 Answer:
-
 Among the three attack types, 3D mold attacks are expected to be the most difficult for the model to detect.
-
 * Printed photo attacks are easier to detect because printed images often contain paper texture, blur, and printing artifacts that differ from genuine fingerprints.
 * Screen replay attacks are moderately difficult because screen glare, moiré patterns, and pixel structures can resemble real fingerprints under certain lighting conditions.
 * 3D mold attacks are the most difficult because they reproduce the physical ridge and valley structure of a real fingerprint and closely mimic the appearance of a live finger, especially without specialized liveness sensors.
@@ -129,26 +86,19 @@ Among the three attack types, 3D mold attacks are expected to be the most diffic
 ---
 
 6. Why do we fix BPCER and not APCER when choosing the operating threshold?
-
 Answer:
-
 The operating threshold is selected by fixing BPCER because it limits the false rejection rate for genuine users, ensuring a good user experience.
-
 After selecting an acceptable BPCER (for example, 3%), the corresponding APCER is measured to evaluate how effectively the system prevents spoof attacks. This approach provides a balance between usability and security and follows the standard evaluation methodology used in biometric presentation attack detection systems.
 
 ---
 
 7. If you had 3 months and a proper dataset, what would you do differently?
-
 Answer:
-
 With three months and access to a larger, well-annotated fingerprint liveness dataset, I would make the following improvements:
-
 * Train on a significantly larger and more diverse dataset collected from multiple sensors, users, lighting conditions, and spoof materials such as paper, screen replay, silicone, gelatin, latex, and 3D molds.
 * Apply stronger data augmentation techniques, including rotation, scaling, brightness and contrast variation, blur, and noise, to improve generalization.
 * Compare MobileNetV3-Small with more advanced architectures such as EfficientNet, ResNet50, and ConvNeXt using transfer learning.
 * Perform more robust threshold calibration using ROC and DET curve analysis and report biometric metrics at multiple operating points (for example, BPCER = 1%, 3%, and 5%).
 * Use k-fold cross-validation and systematic hyperparameter tuning to improve model performance and reduce overfitting.
 * Evaluate the trained model on previously unseen presentation attack types to assess its robustness in real-world deployment.
-
 These improvements would significantly enhance the model's accuracy, robustness, and practical applicability for fingerprint presentation attack detection.
