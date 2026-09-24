@@ -30,9 +30,9 @@ for split in ["train", "val", "test"]:
 for cls in CLASSES:
 
     source_dir = DATA_DIR / cls
-
+    # print(source_dir)
     images = list(source_dir.glob("*"))
-
+    # print(images)
     random.Random(42).shuffle(images)
 
     num_images = len(images)
