@@ -4,13 +4,23 @@ import cv2
 from pathlib import Path
 
 MODEL_DIR = Path("models")
+OUTPUT_DIR = Path("outputs")
+
 model_path = MODEL_DIR / "liveness_model.keras"
+threshold_path = OUTPUT_DIR / "best_threshold.txt"
 
 print("Loading model...")
 model = tf.keras.models.load_model(model_path)
 print("Model loaded.")
 
-THRESHOLD = 0.5  # Or load dynamically from your evaluation file
+# Dynamically load the calibrated threshold from evaluation outputs
+if threshold_path.exists():
+    with open(threshold_path, "r") as f:
+        THRESHOLD = float(f.read().strip())
+    print(f"Loaded calibrated threshold: {THRESHOLD:.4f}")
+else:
+    THRESHOLD = 0.5
+    print(f"Warning: 'best_threshold.txt' not found in outputs/. Falling back to default THRESHOLD = {THRESHOLD}")
 
 def predict_image(image_path):
     img = cv2.imread(str(image_path))
@@ -24,7 +34,7 @@ def predict_image(image_path):
     
     score = float(model.predict(img)[0][0])
     
-    # Assuming Class 0 = Live, Class 1 = Spoof (or vice versa depending on your generator)
+    # Class 0 = Live, Class 1 = Spoof
     is_live = score < THRESHOLD
     label = "LIVE ✅" if is_live else "SPOOF ❌"
     confidence = (1 - score) if is_live else score
@@ -41,7 +51,7 @@ if __name__ == "__main__":
         predict_image(IMAGE_PATH)
     else:
         print(f"Please place a test image at {IMAGE_PATH} to run inference.")
-        
+
 # """
 # Fingerprint Liveness Detection
 # Inference Script
