@@ -326,6 +326,3 @@ pip install -r requirements.txt
 
 This project was developed for academic purposes as part of a Fingerprint Presentation Attack Detection assignment.
 
-```
-
-```
