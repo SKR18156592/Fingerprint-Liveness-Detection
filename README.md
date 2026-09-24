@@ -125,7 +125,7 @@ All images are resized to **224 × 224** pixels before training.
 | Batch Size    | 8                   |
 | Loss Function | Binary Crossentropy |
 
->  learning rate of **0.001**.
+>  learning rate of **0.0001**.
 
 ---
 
