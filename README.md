@@ -2,7 +2,6 @@
 
 A deep learning-based **Presentation Attack Detection (PAD)** system that classifies fingerprint images as **LIVE** or **SPOOF** using **Transfer Learning** with **MobileNetV3-Small** and TensorFlow/Keras.
 
-
 ---
 
 ## Overview
@@ -78,58 +77,61 @@ Fingerprint-Liveness-Detection/
 ├── liveness_infer.py
 ├── requirements.txt
 └── README.md
+
 ```
 
 ---
 
-# Dataset
+## Dataset
 
-## Directory Structure
+### Directory Structure
 
-```
+```text
 data/
 ├── live/
 └── spoof/
+
 ```
 
-### Dataset Split
+### Dataset Split & Summary
 
-| Split      | Percentage |
-| ---------- | ---------: |
-| Training   |        70% |
-| Validation |        15% |
-| Testing    |        15% |
+| Split | Percentage | Live Count | Spoof Count | Total Count |
+| --- | --- | --- | --- | --- |
+| Training | 70% | 84 | 84 | 168 |
+| Validation | 15% | 18 | 18 | 36 |
+| Testing | 15% | 18 | 18 | 36 |
 
-All images are resized to **224 × 224** pixels before training.
-
----
-
-# Model Architecture
-
-* Backbone: **MobileNetV3-Small**
-* Framework: TensorFlow / Keras
-* Transfer Learning
-* Global Average Pooling
-* Dropout (0.3)
-* Sigmoid Output Layer
+All images are resized to **224 × 224** pixels with 3 color channels before training.
 
 ---
 
-# Training Configuration
+## Model Architecture
 
-| Parameter     | Value               |
-| ------------- | ------------------- |
-| Optimizer     | Adam                |
-| Epochs        | 30                  |
-| Image Size    | 224 × 224           |
-| Batch Size    | 8                   |
+* **Backbone:** MobileNetV3-Small (Fine-tuning the last 25 layers)
+* **Framework:** TensorFlow / Keras
+* **Input Shape:** `(None, 224, 224, 3)`
+* **Global Average Pooling 2D:** `(None, 576)`
+* **Dropout Layer:** `0.3` rate
+* **Sigmoid Output Layer:** `Dense(1, activation="sigmoid")`
+* **Parameters:** 939,697 total (~3.58 MB) | 490,129 trainable (~1.87 MB)
+
+---
+
+## Training Configuration
+
+| Parameter | Value |
+| --- | --- |
+| Optimizer | Adam |
+| Learning Rate | 0.0001 (`1e-4`) |
+| Epochs | 30 (Early Stopping) |
+| Image Size | 224 × 224 |
+| Batch Size | 8 |
 | Loss Function | Binary Crossentropy |
-
->  learning rate of **0.0001**.
+| Callbacks | ModelCheckpoint, EarlyStopping (patience=6), ReduceLROnPlateau (factor=0.2, patience=3, min_lr=1e-6), CSVLogger |
 
 ---
 
-# Data Augmentation
+## Data Augmentation
 
 Training images undergo:
 
@@ -140,58 +142,57 @@ Training images undergo:
 
 ---
 
-# Evaluation Metrics
+## Evaluation Metrics & Performance Benchmarks
 
-The model is evaluated using:
+The model is evaluated using rigorous biometric and classification metrics:
 
-* Accuracy
-* Precision
-* Recall
-* F1 Score
-* APCER
-* BPCER
-* ACER
-* Equal Error Rate (EER)
-* ROC-AUC
+* **Test Accuracy:** **97.22%**
+* **ROC-AUC Score:** **1.000**
+* **F1-Score:** **0.9730**
+* **Precision:** **0.9474**
+* **Recall / True Positive Rate:** **1.0000**
+* **APCER (Attack Presentation Classification Error Rate):** **0.0000** (Zero false-negative spoof bypasses)
+* **BPCER (Bona Fide Presentation Classification Error Rate):** **0.0556**
+* **ACER (Average Classification Error Rate):** **0.0278**
+* **Equal Error Rate (EER):** **0.0000**
+* **Calibrated Operating Threshold:** **0.3300** (Targeting a BPCER of ~3%)
 
 Threshold calibration is performed on the **validation set** by sweeping thresholds from **0.00 to 1.00** with a step size of **0.01**. The operating threshold is selected where **BPCER ≈ 3%**, and the model is then evaluated on the **test set** using this calibrated threshold.
 
 ---
 
-# Generated Outputs
+## Generated Outputs
 
 The evaluation script generates:
 
-* Confusion Matrix
-* ROC Curve
-* Score Distribution
-* APCER–BPCER Tradeoff Curve
-* Evaluation Metrics CSV
-* Best Threshold File
+* Confusion Matrix (`confusion_matrix.png`)
+* ROC Curve (`roc_curve.png`)
+* Score Distribution (`score_distribution.png`)
+* APCER–BPCER Tradeoff Curve (`apcer_bpcer_tradeoff.png`)
+* Evaluation Metrics CSV (`evaluation_metrics.csv`)
+* Best Threshold File (`best_threshold.txt`)
 
 ---
 
-# Running the Project
+## Running the Project
 
-## 1. Clone Repository
+### 1. Clone Repository
 
 ```bash
-git clone https://github.com/SKR18156592/Fingerprint-Liveness-Detection.git
+git clone [https://github.com/SKR18156592/Fingerprint-Liveness-Detection.git](https://github.com/SKR18156592/Fingerprint-Liveness-Detection.git)
 
 cd Fingerprint-Liveness-Detection
+
 ```
 
----
-
-## 2. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
+
 ```
 
----
-
-## 3. Prepare Dataset
+### 3. Prepare Dataset
 
 Place fingerprint images inside:
 
@@ -199,88 +200,96 @@ Place fingerprint images inside:
 data/
 ├── live/
 └── spoof/
+
 ```
 
 Generate dataset splits:
 
 ```bash
 python dataset_split.py
+
 ```
 
----
-
-## 4. Train the Model
+### 4. Train the Model
 
 ```bash
 python liveness_train.py
+
 ```
 
 The trained model will be saved to:
 
 ```text
 models/liveness_model.keras
+
 ```
 
----
-
-## 5. Evaluate the Model
+### 5. Evaluate the Model
 
 ```bash
 python liveness_eval.py
+
 ```
 
 Generated outputs will be saved in:
 
 ```text
 outputs/
+
 ```
 
----
+### 6. Run Inference
 
-## 6. Run Inference
-
-Update the image path inside:
+Update the image path inside `liveness_infer.py` or place your image at:
 
 ```python
-IMAGE_PATH = "test_images/your_image.jpg"
+IMAGE_PATH = Path("test_images/sample_fingerprint.jpg")
+
 ```
 
 Then run:
 
 ```bash
 python liveness_infer.py
+
 ```
 
 Example output:
 
 ```text
+Loading model...
+Model loaded.
+Loaded calibrated threshold: 0.3300
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 440ms/step
+
 Prediction
---------------------
-Label      : LIVE ✅
-Score      : 0.0028
-Confidence : 99.72%
+----------------------
+Label      : SPOOF ❌
+Score      : 0.9984
+Confidence : 99.84%
+
 ```
 
 ---
 
-# Results
+## Results Summary Table
 
-The evaluation script reports:
-
-* Accuracy
-* Precision
-* Recall
-* F1 Score
-* APCER
-* BPCER
-* ACER
-* Equal Error Rate (EER)
-* ROC-AUC
-* Operating Threshold
+| Metric | Score / Value |
+| --- | --- |
+| **Threshold (BPCER≈3%)** | `0.3300` |
+| **Precision** | `0.9474` |
+| **Recall** | `1.0000` |
+| **F1 Score** | `0.9730` |
+| **APCER** | `0.0000` |
+| **BPCER** | `0.0556` |
+| **ACER** | `0.0278` |
+| **EER** | `0.0000` |
+| **ROC-AUC** | `1.0000` |
+| **Test Accuracy** | `97.22%` |
 
 ---
 
-### Future Improvements
+## Future Improvements
 
 Given more time and a larger dataset, future work could include:
 
@@ -294,7 +303,7 @@ Given more time and a larger dataset, future work could include:
 
 ---
 
-# Requirements
+## Requirements
 
 * Python 3.10+
 * TensorFlow
@@ -308,10 +317,15 @@ Install using:
 
 ```bash
 pip install -r requirements.txt
+
 ```
 
 ---
 
-# License
+## License
 
 This project was developed for academic purposes as part of a Fingerprint Presentation Attack Detection assignment.
+
+```
+
+```
