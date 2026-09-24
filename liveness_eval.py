@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, classification_report, roc_curve, auc
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve, auc, precision_score, recall_score, f1_score
 from dataset import val_ds, test_ds
 
 MODEL_DIR = Path("models")
@@ -30,11 +30,6 @@ val_preds = model.predict(val_images).flatten()
 # ==========================================================
 # 2. Threshold Calibration (Targeting BPCER ≈ 3%)
 # ==========================================================
-# Definitions:
-# - Live = Class 0, Spoof = Class 1
-# - BPCER: Fraction of Live samples classified as Spoof (False Positives on Live)
-# - APCER: Fraction of Spoof samples classified as Live (False Negatives on Spoof)
-
 live_scores = val_preds[val_labels == 0]
 spoof_scores = val_preds[val_labels == 1]
 
@@ -46,22 +41,18 @@ bpcer_history = []
 apcer_history = []
 
 for t in thresholds:
-    # If score >= t, predict Spoof (1); else predict Live (0)
     bpcer = np.mean(live_scores >= t)  # Live misclassified as Spoof
     apcer = np.mean(spoof_scores < t)   # Spoof misclassified as Live
     
     bpcer_history.append(bpcer)
     apcer_history.append(apcer)
     
-    # Target BPCER = 3% (0.03)
     diff = abs(bpcer - 0.03)
     if diff < min_bpcer_diff:
         min_bpcer_diff = diff
         best_threshold = t
 
-# Fallback if threshold is locked at extremes, pick a balanced point
 if best_threshold >= 0.99 or best_threshold <= 0.01:
-    # Find Equal Error Rate (EER) as a robust fallback
     eer_diffs = [abs(a - b) for a, b in zip(apcer_history, bpcer_history)]
     best_threshold = thresholds[np.argmin(eer_diffs)]
 
@@ -100,11 +91,19 @@ acer_test = (apcer_test + bpcer_test) / 2.0
 
 accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0.0
 
+# Explicitly compute Precision, Recall, and F1 Score (Method 1)
+test_precision = precision_score(test_labels, test_preds_binary, zero_division=0)
+test_recall = recall_score(test_labels, test_preds_binary, zero_division=0)
+test_f1 = f1_score(test_labels, test_preds_binary, zero_division=0)
+
 print("\nPAD Metrics on Test Set:")
-print(f"APCER : {apcer_test:.4f}")
-print(f"BPCER : {bpcer_test:.4f}")
-print(f"ACER  : {acer_test:.4f}")
-print(f"Accuracy: {accuracy:.4f}")
+print(f"Precision : {test_precision:.4f}")
+print(f"Recall    : {test_recall:.4f}")
+print(f"F1 Score  : {test_f1:.4f}")
+print(f"APCER     : {apcer_test:.4f}")
+print(f"BPCER     : {bpcer_test:.4f}")
+print(f"ACER      : {acer_test:.4f}")
+print(f"Accuracy  : {accuracy:.4f}")
 
 # Compute ROC and EER for reporting
 fpr, tpr, roc_thresholds = roc_curve(test_labels, test_preds)
@@ -113,13 +112,16 @@ eer_idx = np.nanargmin(np.absolute(fnr - fpr))
 eer_val = (fnr[eer_idx] + fpr[eer_idx]) / 2.0
 roc_auc = auc(fpr, tpr)
 
-print(f"EER   : {eer_val:.4f}")
-print(f"ROC AUC: {roc_auc:.4f}")
+print(f"EER       : {eer_val:.4f}")
+print(f"ROC AUC   : {roc_auc:.4f}")
 
-# Save Metrics to CSV
+# Save Metrics to CSV (including F1 Score)
 with open(OUTPUT_DIR / "evaluation_metrics.csv", "w") as f:
     f.write("Metric,Value\n")
     f.write(f"Threshold,{best_threshold}\n")
+    f.write(f"Precision,{test_precision}\n")
+    f.write(f"Recall,{test_recall}\n")
+    f.write(f"F1_Score,{test_f1}\n")
     f.write(f"APCER,{apcer_test}\n")
     f.write(f"BPCER,{bpcer_test}\n")
     f.write(f"ACER,{acer_test}\n")
