@@ -326,3 +326,5 @@ pip install -r requirements.txt
 
 This project was developed for academic purposes as part of a Fingerprint Presentation Attack Detection assignment.
 
+The source code is released under the [MIT License](LICENSE). The fingerprint images in `data/` and `test_images/` are not covered by the MIT License and remain subject to the terms of their original source.
+
